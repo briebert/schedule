@@ -125,6 +125,76 @@
   .legend span{display:flex;align-items:center;gap:8px}
   .legend .sw{width:13px;height:13px;border-radius:50%;display:inline-block}
 
+  /* ---------- event checker ---------- */
+  .checker{
+    background:var(--panel);
+    border-radius:var(--radius);
+    padding:18px 20px 20px;
+    margin:0 0 26px;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+  .checker h2{
+    font-family:'Quicksand',sans-serif;
+    font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;margin-bottom:4px;
+  }
+  .checker-hint{color:var(--muted);font-size:13.5px;margin-bottom:14px}
+  .checker-row{display:flex;flex-wrap:wrap;gap:10px}
+  .checker-row input{
+    font-family:'Nunito',sans-serif;
+    font-size:14.5px;color:var(--text);
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:10px 18px;
+    outline:none;
+  }
+  .checker-row input:focus{border-color:var(--day)}
+  .checker-row input[type="text"]{flex:2 1 200px;min-width:170px}
+  .checker-row input[type="date"]{flex:1 1 160px;min-width:150px;color-scheme:dark}
+  .checker-row input::placeholder{color:var(--muted)}
+  .checker-row button{
+    font-family:'Quicksand',sans-serif;
+    font-size:14px;font-weight:700;
+    background:var(--day);color:var(--day-ink);
+    border:none;border-radius:999px;
+    padding:10px 24px;cursor:pointer;
+    box-shadow:0 3px 10px rgba(0,0,0,.16);
+  }
+  .checker-row button:hover{background:#f9c9a4}
+  .checker-result{
+    margin-top:16px;
+    background:var(--panel-2);
+    border-radius:var(--radius-sm);
+    padding:14px 16px;
+  }
+  .cr-head{display:flex;align-items:center;gap:12px}
+  .cr-chip{
+    width:40px;height:40px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Quicksand',sans-serif;font-weight:700;font-size:15px;
+    flex-shrink:0;
+  }
+  .cr-title{font-family:'Quicksand',sans-serif;font-weight:700;font-size:17px}
+  .cr-date{color:var(--muted);font-size:13.5px}
+  .cr-note{margin-top:10px;font-size:14px;color:var(--text)}
+  .cr-mini{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  .cr-mini .md{
+    flex:1 1 90px;min-width:88px;
+    border-radius:var(--radius-sm);
+    padding:8px 10px;text-align:center;
+    background:var(--off);color:var(--muted);
+    font-size:12px;
+  }
+  .cr-mini .md b{
+    display:block;font-family:'Quicksand',sans-serif;
+    font-size:12.5px;font-weight:700;margin-top:2px;
+  }
+  .cr-mini .md.D{background:var(--day);color:var(--day-ink)}
+  .cr-mini .md.N{background:var(--night);color:var(--night-ink)}
+  .cr-mini .md.R{background:var(--relief);color:var(--relief-ink)}
+  .cr-mini .md.is-evt{outline:2px solid var(--today-ring);outline-offset:2px}
+
   /* ---------- year nav ---------- */
   .yearnav{
     position:sticky;top:0;z-index:10;
@@ -252,6 +322,27 @@
       <span><span class="sw" style="background:var(--night)"></span>N &mdash; Nights</span>
       <span><span class="sw" style="background:var(--relief)"></span>R &mdash; Relief</span>
       <span><span class="sw" style="background:var(--off)"></span>Off</span>
+    </div>
+  </section>
+
+  <section class="checker">
+    <h2>Can I make it?</h2>
+    <p class="checker-hint">Type an event and pick its date to see whether you&rsquo;re working.</p>
+    <div class="checker-row">
+      <input type="text" id="evtName" placeholder="Concert, game, wedding&hellip;" aria-label="Event name (optional)">
+      <input type="date" id="evtDate" min="2026-07-27" max="2028-07-30" aria-label="Event date">
+      <button id="evtCheck">Check date</button>
+    </div>
+    <div class="checker-result" id="evtResult" hidden>
+      <div class="cr-head">
+        <span class="cr-chip" id="crChip"></span>
+        <div>
+          <div class="cr-title" id="crTitle"></div>
+          <div class="cr-date" id="crDate"></div>
+        </div>
+      </div>
+      <div class="cr-note" id="crNote"></div>
+      <div class="cr-mini" id="crMini"></div>
     </div>
   </section>
 
@@ -413,6 +504,63 @@
     monthsEl.appendChild(mDiv);
     cur = new Date(y, m+1, 1);
   }
+
+  // ---- event checker ----
+  var evtName = document.getElementById('evtName');
+  var evtDate = document.getElementById('evtDate');
+  var evtResult = document.getElementById('evtResult');
+
+  function checkEvent(){
+    var v = evtDate.value;
+    if(!v){ evtDate.focus(); return; }
+    var p = v.split('-');
+    var d = new Date(+p[0], +p[1]-1, +p[2]);   // local, avoids UTC off-by-one
+    var name = evtName.value.trim();
+    var code = shiftFor(d);
+    var chip = document.getElementById('crChip');
+    var title = document.getElementById('crTitle');
+    var note = document.getElementById('crNote');
+
+    var colors = {
+      D:['var(--day)','var(--day-ink)'],
+      N:['var(--night)','var(--night-ink)'],
+      R:['var(--relief)','var(--relief-ink)'],
+      Off:['var(--off)','var(--muted)']
+    };
+    chip.style.background = colors[code][0];
+    chip.style.color = colors[code][1];
+    chip.textContent = code==='Off' ? '\u2713' : code;
+
+    var msgs = {
+      Off:['You\u2019re off that day', 'No shift scheduled \u2014 go enjoy it.'],
+      D:['Day shift that day', 'You\u2019re on days, so the daytime is booked \u2014 an evening event could still work, depending on timing.'],
+      N:['Night shift that evening', 'You work that night, so an evening event won\u2019t work without a swap. The daytime before the shift is free.'],
+      R:['Relief week', 'You\u2019re on relief that week \u2014 not scheduled on a desk, but you could be called in to cover.']
+    };
+    title.textContent = (name ? name + ' \u2014 ' : '') + msgs[code][0];
+    document.getElementById('crDate').textContent = fmt(d,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    var extra = '';
+    if(mid(d) > END) extra = ' Heads up: this date is past the generated range, so it\u2019s a pattern projection.';
+    var prevN = shiftFor(new Date(d.getTime()-dayMs()));
+    if(code==='Off' && prevN==='N') extra += ' Note: you work the night before, so you\u2019ll be coming off nights that morning.';
+    note.textContent = msgs[code][1] + extra;
+
+    var miniEl = document.getElementById('crMini');
+    miniEl.innerHTML = '';
+    for(var o=-1;o<=1;o++){
+      var dd = new Date(d.getTime()+o*dayMs());
+      var c = shiftFor(dd);
+      var e = document.createElement('div');
+      e.className = 'md '+c+(o===0?' is-evt':'');
+      e.innerHTML = fmt(dd,{weekday:'short',month:'short',day:'numeric'})+'<b>'+NAMES[c]+'</b>';
+      miniEl.appendChild(e);
+    }
+    evtResult.hidden = false;
+  }
+  document.getElementById('evtCheck').addEventListener('click', checkEvent);
+  [evtName, evtDate].forEach(function(el){
+    el.addEventListener('keydown', function(ev){ if(ev.key==='Enter') checkEvent(); });
+  });
 
   document.getElementById('jumpToday').addEventListener('click', function(){
     var target = todayCellId ? document.getElementById(todayCellId) : document.getElementById('months');
