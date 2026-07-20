@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brian — Shift Schedule</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1d1a26;          /* warm charcoal-plum */
+    --panel:#272334;
+    --panel-2:#2f2a3f;
+    --line:#3a3450;
+    --text:#f1edf7;
+    --muted:#a89fbd;
+    --day:#f6bb8f;         /* soft apricot — day shift */
+    --day-ink:#3d2412;
+    --night:#a9b2f4;       /* soft periwinkle — night shift */
+    --night-ink:#1d2150;
+    --relief:#a3d9b8;      /* soft sage — relief week */
+    --relief-ink:#123a24;
+    --off:#2e2940;         /* quiet plum — off */
+    --today-ring:#f7e8c9;  /* warm cream */
+    --radius:18px;
+    --radius-sm:12px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Nunito',system-ui,sans-serif;
+    font-size:15.5px;
+    line-height:1.55;
+    padding-bottom:80px;
+  }
+  .wrap{max-width:1060px;margin:0 auto;padding:0 16px}
+
+  /* ---------- header ---------- */
+  header{
+    padding:30px 0 22px;
+    margin-bottom:20px;
+  }
+  .eyebrow{
+    font-family:'Quicksand',sans-serif;
+    font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;
+  }
+  h1{
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;font-size:clamp(27px,4.5vw,40px);
+    letter-spacing:.005em;line-height:1.12;margin-top:6px;
+  }
+  .sub{color:var(--muted);margin-top:7px;font-size:14px}
+
+  /* ---------- now panel ---------- */
+  .now{
+    display:flex;flex-wrap:wrap;gap:14px;align-items:stretch;
+    margin-top:20px;
+  }
+  .now-card{
+    background:var(--panel);
+    border-radius:var(--radius);
+    padding:16px 20px;
+    flex:1 1 220px;
+    min-width:200px;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+  .now-card .lbl{
+    font-family:'Quicksand',sans-serif;
+    font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;
+  }
+  .now-card .val{
+    font-family:'Quicksand',sans-serif;
+    font-size:22px;font-weight:700;margin-top:5px;
+  }
+  .now-card .det{color:var(--muted);font-size:13.5px;margin-top:2px}
+  .val .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:9px;vertical-align:baseline}
+
+  /* ---------- cycle strip ---------- */
+  .cycle{
+    background:var(--panel);
+    border-radius:var(--radius);
+    padding:18px 20px 22px;
+    margin:18px 0 26px;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+  .cycle h2{
+    font-family:'Quicksand',sans-serif;
+    font-size:12.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;margin-bottom:14px;
+  }
+  .strip{
+    display:grid;grid-template-columns:repeat(35,1fr);gap:3px;
+    position:relative;
+  }
+  .strip .cell{
+    height:20px;border-radius:20px;background:var(--off);
+    position:relative;
+  }
+  .strip .cell.D{background:var(--day)}
+  .strip .cell.N{background:var(--night)}
+  .strip .cell.R{background:var(--relief)}
+  .strip .cell.here{outline:2px solid var(--today-ring);outline-offset:2px;z-index:2}
+  .strip .cell.here::after{
+    content:"today";
+    position:absolute;top:-22px;left:50%;transform:translateX(-50%);
+    font-family:'Quicksand',sans-serif;font-size:10.5px;letter-spacing:.08em;font-weight:600;
+    color:var(--today-ring);white-space:nowrap;
+  }
+  .weeklbls{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-top:10px;
+  }
+  .weeklbls div{
+    font-family:'Quicksand',sans-serif;
+    font-size:10.5px;letter-spacing:.05em;font-weight:600;
+    color:var(--muted);text-align:center;
+  }
+  .legend{
+    display:flex;flex-wrap:wrap;gap:18px;margin-top:16px;
+    font-size:13.5px;color:var(--muted);
+  }
+  .legend span{display:flex;align-items:center;gap:8px}
+  .legend .sw{width:13px;height:13px;border-radius:50%;display:inline-block}
+
+  /* ---------- year nav ---------- */
+  .yearnav{
+    position:sticky;top:0;z-index:10;
+    background:linear-gradient(var(--bg) 82%,transparent);
+    padding:10px 0 16px;
+    display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  }
+  .yearnav a,.yearnav button{
+    font-family:'Quicksand',sans-serif;
+    font-size:13.5px;font-weight:600;
+    color:var(--text);text-decoration:none;
+    background:var(--panel);border:none;border-radius:999px;
+    padding:8px 18px;cursor:pointer;
+    box-shadow:0 3px 10px rgba(0,0,0,.16);
+  }
+  .yearnav a:hover,.yearnav button:hover{background:var(--panel-2)}
+  .yearnav .today-btn{background:var(--day);color:var(--day-ink)}
+  .yearnav .today-btn:hover{background:#f9c9a4}
+
+  /* ---------- months ---------- */
+  .months{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+    gap:20px;
+  }
+  .yr-head{
+    grid-column:1/-1;
+    font-family:'Quicksand',sans-serif;
+    font-size:22px;font-weight:700;letter-spacing:.04em;
+    color:var(--text);
+    padding:28px 0 4px;
+    scroll-margin-top:70px;
+  }
+  .month{
+    background:var(--panel);
+    border-radius:var(--radius);
+    padding:16px 16px 18px;
+    scroll-margin-top:70px;
+    box-shadow:0 6px 18px rgba(0,0,0,.18);
+  }
+  .month h3{
+    font-family:'Quicksand',sans-serif;
+    font-size:16px;font-weight:700;letter-spacing:.03em;
+    margin-bottom:12px;
+  }
+  .grid{
+    display:grid;grid-template-columns:repeat(7,1fr);gap:5px;
+  }
+  .dow{
+    font-family:'Quicksand',sans-serif;
+    font-size:10.5px;font-weight:600;color:var(--muted);
+    text-align:center;padding-bottom:3px;
+  }
+  .d{
+    aspect-ratio:1/1;
+    border-radius:var(--radius-sm);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:var(--off);
+    font-size:12.5px;color:var(--muted);
+    position:relative;
+    min-height:34px;
+  }
+  .d .num{font-weight:600;line-height:1}
+  .d .code{
+    font-family:'Quicksand',sans-serif;
+    font-size:10px;font-weight:700;letter-spacing:.04em;line-height:1;margin-top:3px;
+  }
+  .d.D{background:var(--day);color:var(--day-ink)}
+  .d.N{background:var(--night);color:var(--night-ink)}
+  .d.R{background:var(--relief);color:var(--relief-ink)}
+  .d.blank{background:transparent}
+  .d.out{opacity:.28}
+  .d.today{outline:2px solid var(--today-ring);outline-offset:2px;z-index:1}
+
+  footer{
+    margin-top:44px;color:var(--muted);font-size:13px;
+    border-top:1px solid var(--line);padding-top:18px;
+  }
+  @media (max-width:560px){
+    .strip .cell{height:14px}
+    .strip .cell.here::after{display:none}
+    .now-card .val{font-size:18px}
+  }
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">DuPont 5-Week Rotation</div>
+    <h1>Brian&rsquo;s Shift Schedule</h1>
+    <div class="sub">Jul 27, 2026 &ndash; Jul 30, 2028 &middot; anchored to the posted 2026 schedule</div>
+
+    <div class="now" id="nowPanel">
+      <div class="now-card">
+        <div class="lbl">Today</div>
+        <div class="val" id="todayVal">&mdash;</div>
+        <div class="det" id="todayDet"></div>
+      </div>
+      <div class="now-card">
+        <div class="lbl">Next shift</div>
+        <div class="val" id="nextVal">&mdash;</div>
+        <div class="det" id="nextDet"></div>
+      </div>
+      <div class="now-card">
+        <div class="lbl">Next full week off</div>
+        <div class="val" id="offVal">&mdash;</div>
+        <div class="det" id="offDet"></div>
+      </div>
+    </div>
+  </header>
+
+  <section class="cycle">
+    <h2>Where you are in the 35-day cycle</h2>
+    <div class="strip" id="strip"></div>
+    <div class="weeklbls">
+      <div>Wk 1 &middot; Off</div>
+      <div>Wk 2 &middot; Relief</div>
+      <div>Wk 3 &middot; Nights</div>
+      <div>Wk 4 &middot; D / N</div>
+      <div>Wk 5 &middot; Days</div>
+    </div>
+    <div class="legend">
+      <span><span class="sw" style="background:var(--day)"></span>D &mdash; Days</span>
+      <span><span class="sw" style="background:var(--night)"></span>N &mdash; Nights</span>
+      <span><span class="sw" style="background:var(--relief)"></span>R &mdash; Relief</span>
+      <span><span class="sw" style="background:var(--off)"></span>Off</span>
+    </div>
+  </section>
+
+  <nav class="yearnav" id="yearnav">
+    <button class="today-btn" id="jumpToday">Jump to today</button>
+  </nav>
+
+  <main class="months" id="months"></main>
+
+  <footer>
+    Pattern: Wk1 off &middot; Wk2 relief Mon&ndash;Sun &middot; Wk3 nights Mon&ndash;Thu &middot; Wk4 days Mon&ndash;Wed + nights Fri&ndash;Sun &middot; Wk5 days Thu&ndash;Sun.
+    Generated from the posted schedule; swaps, vacation, and coverage changes are not reflected.
+  </footer>
+</div>
+
+<script>
+(function(){
+  // ---- schedule definition ----
+  // 35-day DuPont cycle, day 0 = Monday 2026-07-27
+  // Relief week runs the full Monday-Sunday span.
+  var PATTERN =
+    ['Off','Off','Off','Off','Off','Off','Off',      // Wk1: off week
+     'R','R','R','R','R','R','R',                    // Wk2: relief Mon-Sun
+     'N','N','N','N','Off','Off','Off',              // Wk3: nights Mon-Thu
+     'D','D','D','Off','N','N','N',                  // Wk4: days Mon-Wed, nights Fri-Sun
+     'Off','Off','Off','D','D','D','D'];             // Wk5: days Thu-Sun
+
+  var ANCHOR = new Date(2026,6,27);        // Jul 27 2026 (local)
+  var START  = new Date(2026,6,27);
+  var END    = new Date(2028,6,30);        // Jul 30 2028 — 21 full cycles
+
+  function dayMs(){ return 86400000; }
+  function mid(d){ return new Date(d.getFullYear(),d.getMonth(),d.getDate()); }
+  function diffDays(a,b){ return Math.round((mid(a)-mid(b))/dayMs()); }
+  function shiftFor(d){
+    var i = diffDays(d, ANCHOR) % 35;
+    if(i<0) i += 35;
+    return PATTERN[i];
+  }
+  function inRange(d){ return mid(d) >= START && mid(d) <= END; }
+  function fmt(d,opts){ return d.toLocaleDateString('en-US', opts); }
+  var NAMES = {D:'Days', N:'Nights', R:'Relief', Off:'Off'};
+
+  var today = mid(new Date());
+
+  // ---- now panel ----
+  function dotHtml(code){
+    var c = code==='D'?'var(--day)':code==='N'?'var(--night)':code==='R'?'var(--relief)':'var(--off)';
+    return '<span class="dot" style="background:'+c+'"></span>';
+  }
+  var tShift = shiftFor(today);
+  document.getElementById('todayVal').innerHTML = dotHtml(tShift) + NAMES[tShift];
+  document.getElementById('todayDet').textContent = fmt(today,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  // next D or N shift after today (relief is on-call, so we point at the next scheduled desk shift)
+  var next = null;
+  for(var d=new Date(today.getTime()+dayMs()); mid(d)<=END; d=new Date(d.getTime()+dayMs())){
+    var s = shiftFor(d);
+    if(s==='D' || s==='N'){ next = {date:mid(d), code:s}; break; }
+  }
+  if(tShift==='D' || tShift==='N'){
+    document.getElementById('nextVal').innerHTML = dotHtml(tShift)+'On now';
+    document.getElementById('nextDet').textContent = 'Working today ('+NAMES[tShift]+')';
+  } else if(tShift==='R'){
+    document.getElementById('nextVal').innerHTML = dotHtml('R')+'Relief week';
+    document.getElementById('nextDet').textContent = next ?
+      ('Next D/N: '+fmt(next.date,{weekday:'short',month:'short',day:'numeric'})) : '';
+  } else if(next){
+    document.getElementById('nextVal').innerHTML = dotHtml(next.code)+NAMES[next.code];
+    document.getElementById('nextDet').textContent = fmt(next.date,{weekday:'short',month:'short',day:'numeric'}) +
+      ' · in ' + diffDays(next.date,today) + (diffDays(next.date,today)===1?' day':' days');
+  } else {
+    document.getElementById('nextVal').textContent = '—';
+    document.getElementById('nextDet').textContent = 'Beyond schedule range';
+  }
+
+  // next full off week (cycle day 0 = Monday of the off week)
+  var offStart = null;
+  for(var d2=new Date(today.getTime()); mid(d2)<=END; d2=new Date(d2.getTime()+dayMs())){
+    var idx = diffDays(d2, ANCHOR) % 35; if(idx<0) idx+=35;
+    if(idx===0 && mid(d2)>mid(today)){ offStart = mid(d2); break; }
+  }
+  if(offStart){
+    var offEnd = new Date(offStart.getTime()+6*dayMs());
+    document.getElementById('offVal').textContent =
+      fmt(offStart,{month:'short',day:'numeric'})+' – '+fmt(offEnd,{month:'short',day:'numeric'});
+    document.getElementById('offDet').textContent = 'in ' + diffDays(offStart,today) + ' days';
+  } else {
+    document.getElementById('offVal').textContent = '—';
+    document.getElementById('offDet').textContent = 'Beyond schedule range';
+  }
+
+  // ---- cycle strip ----
+  var strip = document.getElementById('strip');
+  var todayIdx = diffDays(today, ANCHOR) % 35; if(todayIdx<0) todayIdx+=35;
+  var showHere = inRange(today);
+  for(var i=0;i<35;i++){
+    var cell = document.createElement('div');
+    cell.className = 'cell ' + PATTERN[i];
+    if(showHere && i===todayIdx) cell.className += ' here';
+    strip.appendChild(cell);
+  }
+
+  // ---- month calendars ----
+  var monthsEl = document.getElementById('months');
+  var yearnav = document.getElementById('yearnav');
+  var DOWS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  var seenYears = {};
+  var todayCellId = null;
+
+  var cur = new Date(START.getFullYear(), START.getMonth(), 1);
+  var last = new Date(END.getFullYear(), END.getMonth(), 1);
+
+  while(cur <= last){
+    var y = cur.getFullYear(), m = cur.getMonth();
+
+    if(!seenYears[y]){
+      seenYears[y] = true;
+      var yh = document.createElement('div');
+      yh.className = 'yr-head'; yh.id = 'y'+y; yh.textContent = y;
+      monthsEl.appendChild(yh);
+      var a = document.createElement('a');
+      a.href = '#y'+y; a.textContent = y;
+      yearnav.appendChild(a);
+    }
+
+    var mDiv = document.createElement('div');
+    mDiv.className = 'month';
+    mDiv.id = 'm'+y+'-'+m;
+    var h3 = document.createElement('h3');
+    h3.textContent = fmt(cur,{month:'long'});
+    mDiv.appendChild(h3);
+
+    var grid = document.createElement('div');
+    grid.className = 'grid';
+    DOWS.forEach(function(dn){
+      var e = document.createElement('div'); e.className='dow'; e.textContent=dn; grid.appendChild(e);
+    });
+
+    var first = new Date(y,m,1);
+    var lead = (first.getDay()+6)%7;  // Monday-first
+    for(var b=0;b<lead;b++){
+      var blank = document.createElement('div'); blank.className='d blank'; grid.appendChild(blank);
+    }
+    var dim = new Date(y,m+1,0).getDate();
+    for(var dd=1;dd<=dim;dd++){
+      var dt = new Date(y,m,dd);
+      var cellD = document.createElement('div');
+      var code = shiftFor(dt);
+      var cls = 'd ' + code;
+      if(!inRange(dt)) cls += ' out';
+      if(mid(dt).getTime()===today.getTime()){ cls+=' today'; todayCellId = mDiv.id; }
+      cellD.className = cls;
+      cellD.innerHTML = '<span class="num">'+dd+'</span>' +
+        (code!=='Off' && inRange(dt) ? '<span class="code">'+code+'</span>' : '');
+      grid.appendChild(cellD);
+    }
+    mDiv.appendChild(grid);
+    monthsEl.appendChild(mDiv);
+    cur = new Date(y, m+1, 1);
+  }
+
+  document.getElementById('jumpToday').addEventListener('click', function(){
+    var target = todayCellId ? document.getElementById(todayCellId) : document.getElementById('months');
+    if(target) target.scrollIntoView({behavior:'smooth', block:'start'});
+  });
+})();
+</script>
+</body>
+</html>
